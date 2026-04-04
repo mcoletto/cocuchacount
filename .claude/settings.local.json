@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/opt/homebrew/bin/node --version)",
+      "Read(//usr/local/bin/**)",
+      "Read(//Users/martucoletto/.nvm/versions/**)",
+      "Bash(/usr/local/bin/npm install:*)",
+      "Bash(command -v bun)",
+      "Bash(command -v pnpm)",
+      "Bash(command -v yarn)",
+      "Bash(arch -arm64 /usr/local/bin/node --version)",
+      "Bash(/usr/local/bin/node --version)"
+    ]
+  }
+}

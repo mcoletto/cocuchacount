@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum FormatType {
+  LATA
+  VASO
+  BOTELLA_VIDRIO
+  BOTELLA_PLASTICA
+  MC
+  MAQUINA
+  OTRO
+}
+
+enum DrinkType {
+  COMUN
+  ZERO
+  PEPSI
+  OTRA
+}
+
+enum DatePrecision {
+  EXACT
+  MONTH_ONLY
+}
+
+model Consumo {
+  id             String        @id @default(cuid())
+  quantity       Float
+  format         FormatType
+  formatOther    String?
+  drinkType      DrinkType     @default(COMUN)
+  drinkTypeOther String?
+  mlOverride     Int?
+  datePrecision  DatePrecision @default(MONTH_ONLY)
+  consumedAt     DateTime?
+  month          Int?
+  year           Int?
+  country        String        @default("Argentina")
+  place          String?
+  notes          String?
+  sharedWith     SharedEntry[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([consumedAt])
+  @@index([month, year])
+  @@index([country])
+}
+
+model SharedEntry {
+  id        String  @id @default(cuid())
+  consumoId String
+  consumo   Consumo @relation(fields: [consumoId], references: [id], onDelete: Cascade)
+  name      String
+
+  @@index([consumoId])
+}
+
+model FormatConfig {
+  id        String     @id @default(cuid())
+  format    FormatType @unique
+  mlDefault Int
+  updatedAt DateTime   @updatedAt @default(now())
+}
