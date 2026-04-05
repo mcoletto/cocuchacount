@@ -2,22 +2,15 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -56,26 +49,18 @@ export function AddConsumoSheet({ defaultFormat = "LATA", children }: AddConsumo
   );
 
   function toggleShared(name: string) {
-    if (name === "sola") {
-      setShared([]);
-      return;
-    }
-    setShared((prev) =>
-      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
-    );
+    if (name === "sola") { setShared([]); return; }
+    setShared((prev) => prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]);
   }
 
   function addCustomPerson() {
     const name = customPerson.trim().toLowerCase();
-    if (name && !shared.includes(name)) {
-      setShared((prev) => [...prev, name]);
-    }
+    if (name && !shared.includes(name)) setShared((prev) => [...prev, name]);
     setCustomPerson("");
   }
 
   async function handleSubmit() {
     const finalCountry = country === "otro" ? countryOther || "otro" : country;
-
     let datePrecision: "EXACT" | "MONTH_ONLY";
     let consumedAt: string | undefined;
     let month: number | undefined;
@@ -97,10 +82,7 @@ export function AddConsumoSheet({ defaultFormat = "LATA", children }: AddConsumo
       formatOther: format === "OTRO" ? formatOther : undefined,
       drinkType,
       drinkTypeOther: drinkType === "OTRA" ? drinkTypeOther : undefined,
-      datePrecision,
-      consumedAt,
-      month,
-      year,
+      datePrecision, consumedAt, month, year,
       country: finalCountry,
       place: format === "MAQUINA" ? place : undefined,
       sharedWith: shared,
@@ -113,6 +95,9 @@ export function AddConsumoSheet({ defaultFormat = "LATA", children }: AddConsumo
         body: JSON.stringify(body),
       });
       setOpen(false);
+      const qty = parseFloat(quantity) || 1;
+      const label = FORMAT_LABELS[format].toLowerCase();
+      toast.success(`${qty === 0.5 ? "½" : qty} ${qty === 1 ? label : label + "s"} registrada 🥤`);
       router.refresh();
     });
   }
@@ -145,22 +130,16 @@ export function AddConsumoSheet({ defaultFormat = "LATA", children }: AddConsumo
                   onClick={() => setQuantity(q)}
                   className={cn(
                     "flex-1 h-11 rounded-xl border text-sm font-semibold transition-all",
-                    quantity === q
-                      ? "bg-coca-red text-white border-coca-red"
-                      : "border-input bg-background text-foreground"
+                    quantity === q ? "bg-coca-red text-white border-coca-red" : "border-input bg-background"
                   )}
                 >
                   {q === "0.5" ? "½" : q}
                 </button>
               ))}
               <Input
-                type="number"
-                min="0.5"
-                step="0.5"
-                value={quantity}
+                type="number" min="0.5" step="0.5" value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
-                className="w-16 text-center"
-                placeholder="N"
+                className="w-16 text-center" placeholder="N"
               />
             </div>
           </div>
@@ -175,9 +154,7 @@ export function AddConsumoSheet({ defaultFormat = "LATA", children }: AddConsumo
                   onClick={() => setFormat(value)}
                   className={cn(
                     "h-11 rounded-xl border text-sm font-medium transition-all px-3 text-left",
-                    format === value
-                      ? "bg-coca-red text-white border-coca-red"
-                      : "border-input bg-background text-foreground"
+                    format === value ? "bg-coca-red text-white border-coca-red" : "border-input bg-background"
                   )}
                 >
                   {label}
@@ -185,11 +162,7 @@ export function AddConsumoSheet({ defaultFormat = "LATA", children }: AddConsumo
               ))}
             </div>
             {format === "OTRO" && (
-              <Input
-                placeholder="¿Qué formato?"
-                value={formatOther}
-                onChange={(e) => setFormatOther(e.target.value)}
-              />
+              <Input placeholder="¿Qué formato?" value={formatOther} onChange={(e) => setFormatOther(e.target.value)} />
             )}
           </div>
 
@@ -203,9 +176,7 @@ export function AddConsumoSheet({ defaultFormat = "LATA", children }: AddConsumo
                   onClick={() => setDrinkType(value)}
                   className={cn(
                     "h-9 rounded-xl border text-sm font-medium px-4 transition-all",
-                    drinkType === value
-                      ? "bg-coca-red text-white border-coca-red"
-                      : "border-input bg-background text-foreground"
+                    drinkType === value ? "bg-coca-red text-white border-coca-red" : "border-input bg-background"
                   )}
                 >
                   {label}
@@ -213,11 +184,7 @@ export function AddConsumoSheet({ defaultFormat = "LATA", children }: AddConsumo
               ))}
             </div>
             {drinkType === "OTRA" && (
-              <Input
-                placeholder="¿Qué bebida?"
-                value={drinkTypeOther}
-                onChange={(e) => setDrinkTypeOther(e.target.value)}
-              />
+              <Input placeholder="¿Qué bebida?" value={drinkTypeOther} onChange={(e) => setDrinkTypeOther(e.target.value)} />
             )}
           </div>
 
@@ -225,11 +192,7 @@ export function AddConsumoSheet({ defaultFormat = "LATA", children }: AddConsumo
           {format === "MAQUINA" && (
             <div className="space-y-2">
               <Label>Lugar</Label>
-              <Input
-                placeholder="¿Dónde?"
-                value={place}
-                onChange={(e) => setPlace(e.target.value)}
-              />
+              <Input placeholder="¿Dónde?" value={place} onChange={(e) => setPlace(e.target.value)} />
             </div>
           )}
 
@@ -237,23 +200,15 @@ export function AddConsumoSheet({ defaultFormat = "LATA", children }: AddConsumo
           <div className="space-y-2">
             <Label>País</Label>
             <Select value={country} onValueChange={setCountry}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {COUNTRIES.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {c === "otro" ? "Otro..." : c}
-                  </SelectItem>
+                  <SelectItem key={c} value={c}>{c === "otro" ? "Otro..." : c}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
             {country === "otro" && (
-              <Input
-                placeholder="¿Qué país?"
-                value={countryOther}
-                onChange={(e) => setCountryOther(e.target.value)}
-              />
+              <Input placeholder="¿Qué país?" value={countryOther} onChange={(e) => setCountryOther(e.target.value)} />
             )}
           </div>
 
@@ -262,12 +217,10 @@ export function AddConsumoSheet({ defaultFormat = "LATA", children }: AddConsumo
             <Label>Compartido con</Label>
             <div className="flex gap-2 flex-wrap">
               <button
-                onClick={() => { setShared([]); }}
+                onClick={() => setShared([])}
                 className={cn(
                   "h-9 rounded-xl border text-sm font-medium px-4 transition-all",
-                  shared.length === 0
-                    ? "bg-coca-red text-white border-coca-red"
-                    : "border-input bg-background"
+                  shared.length === 0 ? "bg-coca-red text-white border-coca-red" : "border-input bg-background"
                 )}
               >
                 Sola
@@ -278,9 +231,7 @@ export function AddConsumoSheet({ defaultFormat = "LATA", children }: AddConsumo
                   onClick={() => toggleShared(name)}
                   className={cn(
                     "h-9 rounded-xl border text-sm font-medium px-4 transition-all capitalize",
-                    shared.includes(name)
-                      ? "bg-coca-red text-white border-coca-red"
-                      : "border-input bg-background"
+                    shared.includes(name) ? "bg-coca-red text-white border-coca-red" : "border-input bg-background"
                   )}
                 >
                   {name}
@@ -292,8 +243,7 @@ export function AddConsumoSheet({ defaultFormat = "LATA", children }: AddConsumo
                   onClick={() => toggleShared(name)}
                   className="h-9 rounded-xl border bg-coca-red text-white border-coca-red text-sm font-medium px-3 flex items-center gap-1 capitalize"
                 >
-                  {name}
-                  <X size={12} />
+                  {name} <X size={12} />
                 </button>
               ))}
             </div>
@@ -304,9 +254,7 @@ export function AddConsumoSheet({ defaultFormat = "LATA", children }: AddConsumo
                 onChange={(e) => setCustomPerson(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && addCustomPerson()}
               />
-              <Button variant="outline" size="sm" onClick={addCustomPerson}>
-                +
-              </Button>
+              <Button variant="outline" size="sm" onClick={addCustomPerson}>+</Button>
             </div>
           </div>
 
@@ -318,9 +266,7 @@ export function AddConsumoSheet({ defaultFormat = "LATA", children }: AddConsumo
                 onClick={() => setDateMode("today")}
                 className={cn(
                   "flex-1 h-10 rounded-xl border text-sm font-medium transition-all",
-                  dateMode === "today"
-                    ? "bg-coca-red text-white border-coca-red"
-                    : "border-input bg-background"
+                  dateMode === "today" ? "bg-coca-red text-white border-coca-red" : "border-input bg-background"
                 )}
               >
                 Fecha exacta
@@ -329,36 +275,20 @@ export function AddConsumoSheet({ defaultFormat = "LATA", children }: AddConsumo
                 onClick={() => setDateMode("month")}
                 className={cn(
                   "flex-1 h-10 rounded-xl border text-sm font-medium transition-all",
-                  dateMode === "month"
-                    ? "bg-coca-red text-white border-coca-red"
-                    : "border-input bg-background"
+                  dateMode === "month" ? "bg-coca-red text-white border-coca-red" : "border-input bg-background"
                 )}
               >
                 Solo mes
               </button>
             </div>
             {dateMode === "today" ? (
-              <Input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-              />
+              <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
             ) : (
-              <Input
-                type="month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-              />
+              <Input type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
             )}
           </div>
 
-          {/* Submit */}
-          <Button
-            className="w-full"
-            size="lg"
-            onClick={handleSubmit}
-            disabled={isPending}
-          >
+          <Button className="w-full" size="lg" onClick={handleSubmit} disabled={isPending}>
             {isPending ? "Guardando..." : "Guardar"}
           </Button>
         </div>

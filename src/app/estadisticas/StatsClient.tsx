@@ -2,10 +2,11 @@
 
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell, LineChart, Line, CartesianGrid,
 } from "recharts";
 import { FORMAT_LABELS, DRINK_LABELS } from "@/lib/ml-defaults";
 import type { FormatType } from "@prisma/client";
+import { Flame } from "lucide-react";
 
 interface Stats {
   totalHoy: number;
@@ -37,12 +38,10 @@ function StatCard({ label, value, sub }: { label: string; value: string | number
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">
-      {children}
-    </p>
-  );
+  return <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">{children}</p>;
 }
+
+const drinkTypeLabel = (type: string) => DRINK_LABELS[type as keyof typeof DRINK_LABELS] ?? type;
 
 export function StatsClient({ stats }: { stats: Stats }) {
   const {
@@ -50,10 +49,6 @@ export function StatsClient({ stats }: { stats: Stats }) {
     promedioDiario, promedioMensual, rachaActual, diaConMasCoca,
     rankingFormatos, rankingPersonas, porPais, porMes, porTipo,
   } = stats;
-
-  const drinkTypeLabel = (type: string) => {
-    return DRINK_LABELS[type as keyof typeof DRINK_LABELS] ?? type;
-  };
 
   return (
     <div className="px-4 pt-8 space-y-6 pb-8">
@@ -70,63 +65,53 @@ export function StatsClient({ stats }: { stats: Stats }) {
         </div>
       </div>
 
-      {/* Promedios */}
+      {/* Promedios + racha */}
       <div className="space-y-2">
-        <SectionTitle>Promedios</SectionTitle>
+        <SectionTitle>Promedios y racha</SectionTitle>
         <div className="grid grid-cols-2 gap-3">
-          <StatCard
-            label="Promedio diario"
-            value={promedioDiario.toFixed(1)}
-            sub="cocas / día"
-          />
-          <StatCard
-            label="Promedio mensual"
-            value={promedioMensual.toFixed(1)}
-            sub="cocas / mes"
-          />
-          <StatCard
-            label="ML totales"
-            value={`${(mlTotal / 1000).toFixed(1)}L`}
-            sub="estimado"
-          />
-          <StatCard
-            label="Racha actual"
-            value={`${rachaActual}d`}
-            sub={rachaActual > 0 ? "días seguidos" : "sin racha"}
-          />
+          <StatCard label="Promedio diario" value={promedioDiario.toFixed(1)} sub="cocas / día" />
+          <StatCard label="Promedio mensual" value={promedioMensual.toFixed(1)} sub="cocas / mes" />
+          <StatCard label="ML totales" value={`${(mlTotal / 1000).toFixed(1)}L`} sub="estimado" />
+          <div className="bg-white rounded-2xl p-4 shadow-soft border border-border/60">
+            <p className="text-xs text-muted-foreground font-medium">Racha actual</p>
+            <div className="flex items-center gap-1.5 mt-1">
+              {rachaActual > 0 && <Flame size={20} className="fill-orange-400 text-orange-400" />}
+              <p className="text-2xl font-black text-foreground">{rachaActual}d</p>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {rachaActual > 0 ? "días seguidos" : "sin racha"}
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Día top */}
+      {/* Récord */}
       {diaConMasCoca && (
         <div className="space-y-2">
           <SectionTitle>Récord</SectionTitle>
           <div className="bg-white rounded-2xl p-4 shadow-soft border border-border/60">
             <p className="text-xs text-muted-foreground">Día con más cocas</p>
-            <p className="text-xl font-bold mt-1">
+            <p className="text-base font-bold mt-1">
               {new Date(diaConMasCoca.date + "T12:00:00").toLocaleDateString("es-AR", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
+                weekday: "long", day: "numeric", month: "long",
               })}
             </p>
-            <p className="text-coca-red font-black text-2xl">{diaConMasCoca.total} cocas</p>
+            <p className="text-coca-red font-black text-3xl">{diaConMasCoca.total}
+              <span className="text-sm font-normal text-muted-foreground ml-1">cocas</span>
+            </p>
           </div>
         </div>
       )}
 
-      {/* Por mes */}
+      {/* Evolución por mes - Bar chart */}
       {porMes.length > 0 && (
         <div className="space-y-2">
           <SectionTitle>Por mes</SectionTitle>
           <div className="bg-white rounded-2xl p-4 shadow-soft border border-border/60">
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={porMes} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <XAxis
-                  dataKey="label"
-                  tick={{ fontSize: 10, fill: "#888" }}
-                  tickFormatter={(v) => v.split(" ")[0]}
-                />
+              <BarChart data={porMes} margin={{ top: 4, right: 0, left: -20, bottom: 0 }}>
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#888" }}
+                  tickFormatter={(v) => v.split(" ")[0]} />
                 <YAxis tick={{ fontSize: 10, fill: "#888" }} />
                 <Tooltip
                   formatter={(v) => [`${v} cocas`, ""]}
@@ -139,32 +124,32 @@ export function StatsClient({ stats }: { stats: Stats }) {
         </div>
       )}
 
-      {/* Por tipo */}
+      {/* Por tipo de bebida - Pie */}
       {porTipo.length > 0 && (
         <div className="space-y-2">
           <SectionTitle>Por tipo de bebida</SectionTitle>
           <div className="bg-white rounded-2xl p-4 shadow-soft border border-border/60">
-            <ResponsiveContainer width="100%" height={180}>
+            <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie
-                  data={porTipo}
-                  dataKey="total"
-                  nameKey="type"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={70}
-                  label={({ type, percent }) =>
-                    `${drinkTypeLabel(type)} ${(percent * 100).toFixed(0)}%`
-                  }
-                  labelLine={false}
+                  data={porTipo} dataKey="total" nameKey="type"
+                  cx="50%" cy="50%" outerRadius={75} innerRadius={35}
+                  paddingAngle={3}
                 >
-                  {porTipo.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
+                  {porTipo.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
                 <Tooltip formatter={(v, name) => [`${v}`, drinkTypeLabel(name as string)]} />
               </PieChart>
             </ResponsiveContainer>
+            <div className="flex flex-wrap gap-2 justify-center mt-2">
+              {porTipo.map(({ type, total }, i) => (
+                <div key={type} className="flex items-center gap-1.5 text-xs">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
+                  <span className="text-muted-foreground">{drinkTypeLabel(type)}</span>
+                  <span className="font-bold">{total}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -186,10 +171,7 @@ export function StatsClient({ stats }: { stats: Stats }) {
                     <span className="text-muted-foreground font-semibold">{total}</span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-coca-red rounded-full"
-                      style={{ width: `${(total / max) * 100}%` }}
-                    />
+                    <div className="h-full bg-coca-red rounded-full" style={{ width: `${(total / max) * 100}%` }} />
                   </div>
                 </div>
               );
@@ -212,10 +194,7 @@ export function StatsClient({ stats }: { stats: Stats }) {
                     <span className="text-muted-foreground font-semibold">{total}</span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-coca-red rounded-full"
-                      style={{ width: `${(total / max) * 100}%` }}
-                    />
+                    <div className="h-full bg-coca-red rounded-full" style={{ width: `${(total / max) * 100}%` }} />
                   </div>
                 </div>
               );

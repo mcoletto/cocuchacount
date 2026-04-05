@@ -2,13 +2,13 @@ import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { Toaster } from "@/components/ui/sonner";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
 
 export const metadata: Metadata = {
   title: "CocuchaCount",
   description: "Mi registro de consumo de Coca-Cola",
-  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -24,11 +24,7 @@ export const viewport: Viewport = {
   themeColor: "#E8192C",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={geist.variable}>
       <body className="min-h-screen bg-background">
@@ -38,6 +34,7 @@ export default function RootLayout({
         <div className="max-w-md mx-auto">
           <BottomNav />
         </div>
+        <Toaster />
       </body>
     </html>
   );

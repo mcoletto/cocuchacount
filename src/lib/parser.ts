@@ -25,28 +25,15 @@ const MONTH_MAP: Record<string, number> = {
 };
 
 const COUNTRY_MAP: Record<string, string> = {
-  argentina: "Argentina",
-  arg: "Argentina",
-  arge: "Argentina",
-  uruguay: "Uruguay",
-  uru: "Uruguay",
-  urug: "Uruguay",
-  brasil: "Brasil",
-  brazil: "Brasil",
-  bra: "Brasil",
-  "estados unidos": "Estados Unidos",
-  "estados_unidos": "Estados Unidos",
-  usa: "Estados Unidos",
-  us: "Estados Unidos",
-  eeuu: "Estados Unidos",
+  argentina: "Argentina", arg: "Argentina", arge: "Argentina",
+  uruguay: "Uruguay", uru: "Uruguay", urug: "Uruguay",
+  brasil: "Brasil", brazil: "Brasil", bra: "Brasil",
+  "estados unidos": "Estados Unidos", usa: "Estados Unidos",
+  us: "Estados Unidos", eeuu: "Estados Unidos",
 };
 
 function normalizeText(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim();
+  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 }
 
 function parseQuantity(token: string): number | null {
@@ -67,16 +54,16 @@ function extractMlOverride(line: string): number | null {
 
 function detectFormat(norm: string): { format: FormatType; formatOther?: string } | null {
   if (/\bmaquina\b|\bmaquinta\b/.test(norm)) return { format: "MAQUINA" };
-  if (/\bmc\b|\bMc\b|\bmcd\b|\bmcdonalds\b/.test(norm)) return { format: "MC" };
-  if (/\bvidri(o|a|e)\b|\bvidiro\b/.test(norm)) return { format: "BOTELLA_VIDRIO" };
-  if (/\blata\b|\blata\b|\bcixa\b|\bcoxa\b/.test(norm)) return { format: "LATA" };
-  if (/\bvaso(s)?\b|\bvasos\b|\bvasoa\b/.test(norm)) return { format: "VASO" };
-  if (/\bbotella\b|\bbotellas\b/.test(norm)) {
-    if (/\bchiqu?i?t?a\b/.test(norm)) return { format: "BOTELLA_PLASTICA" };
+  if (/\bmc\b|\bmcd\b|\bmcdonalds\b/.test(norm)) return { format: "MC" };
+  if (/\bvidri(o|a|e)\b|\bvidiro\b|\bcocs?\b/.test(norm)) return { format: "BOTELLA_VIDRIO" };
+  // lata/latas + typos
+  if (/\blatas?\b|\bcixa\b|\bcoxa\b/.test(norm)) return { format: "LATA" };
+  if (/\bvasos?\b|\bvasoa\b|\bcopas?\b/.test(norm)) return { format: "VASO" };
+  if (/\bbotellas?\b/.test(norm)) {
+    if (/\bchiqu?i?t?a\b|\bchica\b|\bpeque/.test(norm)) return { format: "BOTELLA_PLASTICA" };
     if (/\bplastic(a|o)\b/.test(norm)) return { format: "BOTELLA_PLASTICA" };
     return { format: "BOTELLA_VIDRIO" };
   }
-  if (/\bcopa(s)?\b/.test(norm)) return { format: "VASO" };
   if (/\bslushi\b|\bfrozen\b/.test(norm)) return { format: "OTRO", formatOther: "frozen slushi" };
   return null;
 }
@@ -84,26 +71,25 @@ function detectFormat(norm: string): { format: FormatType; formatOther?: string 
 function detectDrinkType(norm: string): { drinkType: DrinkType; drinkTypeOther?: string } {
   if (/\bzero\b/.test(norm)) return { drinkType: "ZERO" };
   if (/\bpepsi\b/.test(norm)) return { drinkType: "PEPSI" };
-  if (/\bfanta\b|\bsprite\b|\b7up\b/.test(norm)) return { drinkType: "OTRA", drinkTypeOther: norm.match(/\b(fanta|sprite|7up)\b/)?.[0] };
+  if (/\bfanta\b|\bsprite\b|\b7up\b/.test(norm)) {
+    const m = norm.match(/\b(fanta|sprite|7up)\b/);
+    return { drinkType: "OTRA", drinkTypeOther: m?.[0] };
+  }
   return { drinkType: "COMUN" };
 }
 
 function extractSharedWith(norm: string): string[] {
   const shared: string[] = [];
-  const conMatch = norm.match(/\bcon\s+(.+)$/);
+  const conMatch = norm.match(/\bcon\s+(.+?)(?:\s+en\b|$)/);
   if (!conMatch) return shared;
   const afterCon = conMatch[1];
   const rawNames = afterCon.split(/\s+y\s+|\s*,\s*/);
-  const ignored = new Set(["el", "la", "los", "las", "un", "una", "fede", "vicu", "nacho"]);
   const knownNames = ["fede", "vicu", "nacho"];
+  const ignored = new Set(["el", "la", "los", "las", "un", "una"]);
   for (const raw of rawNames) {
     const n = raw.trim();
-    if (!n) continue;
-    if (knownNames.includes(n)) {
-      shared.push(n);
-    } else if (!ignored.has(n) && n.length > 1) {
-      shared.push(n);
-    }
+    if (!n || ignored.has(n)) continue;
+    shared.push(n);
   }
   return [...new Set(shared)];
 }
@@ -112,17 +98,9 @@ function extractPlace(norm: string): string | undefined {
   const atMatch = norm.match(/\ben\s+(.+?)(?:\s+con\b|$)/);
   if (!atMatch) return undefined;
   const place = atMatch[1].trim();
-  const irrelevant = ["el", "la", "los", "las", "un", "avion", "el avion"];
+  const irrelevant = ["el", "la", "los", "las", "un", "el avion", "avion", "rf"];
   if (irrelevant.includes(place)) return undefined;
   return place;
-}
-
-function isHeader(line: string): boolean {
-  const norm = normalizeText(line);
-  if (MONTH_MAP[norm] !== undefined) return true;
-  if (COUNTRY_MAP[norm] !== undefined) return true;
-  if (norm === "oca" || norm === "coca") return true;
-  return false;
 }
 
 export function parseTxt(
@@ -134,72 +112,53 @@ export function parseTxt(
   const skipped: string[] = [];
 
   let currentMonth: number | null = null;
-  let currentCountry = "Uruguay"; // default from dataset context
-  let lastCountrySet = false;
+  let currentCountry = "Uruguay";
 
   for (const rawLine of lines) {
     const norm = normalizeText(rawLine);
 
-    // Skip headers like "OCA"
     if (norm === "oca" || norm === "coca") continue;
+    if (MONTH_MAP[norm] !== undefined) { currentMonth = MONTH_MAP[norm]; continue; }
+    if (COUNTRY_MAP[norm] !== undefined) { currentCountry = COUNTRY_MAP[norm]; continue; }
 
-    // Month detection
-    if (MONTH_MAP[norm] !== undefined) {
-      currentMonth = MONTH_MAP[norm];
-      lastCountrySet = false;
-      continue;
-    }
+    // Normalize spaceless patterns like "1cocA" → "1 coca", "vaso decoca" → "vaso de coca"
+    const cleaned = norm.replace(/(\d)(coca|lata|vaso)/gi, "$1 $2").replace(/decoca/, "de coca");
 
-    // Country detection
-    if (COUNTRY_MAP[norm] !== undefined) {
-      currentCountry = COUNTRY_MAP[norm];
-      lastCountrySet = true;
-      continue;
-    }
-
-    // Try to parse as a consumption line
-    // Extract quantity first
-    const tokens = norm.split(/\s+/);
+    const tokens = cleaned.split(/\s+/);
     const qty = parseQuantity(tokens[0]);
-
-    if (qty === null) {
-      skipped.push(rawLine);
-      continue;
-    }
+    if (qty === null) { skipped.push(rawLine); continue; }
 
     const mlOverride = extractMlOverride(norm);
-    const formatResult = detectFormat(norm);
+    const drinkInfo = detectDrinkType(norm);
+    let formatResult = detectFormat(cleaned);
 
+    // Special case: pepsi/otra bebida + chica/pequeña sin formato → BOTELLA_PLASTICA
+    if (!formatResult && drinkInfo.drinkType !== "COMUN" && /\bchica\b|\bpeque/.test(norm)) {
+      formatResult = { format: "BOTELLA_PLASTICA" };
+    }
+
+    // Fallback: if "coca" keyword present, assume LATA
     if (!formatResult) {
-      // Try to guess - if it mentions "coca" generically, treat as LATA
       if (/\bcoca\b|\bcoxa\b|\bcixa\b/.test(norm)) {
         entries.push({
-          quantity: qty,
-          format: "LATA",
-          drinkType: "COMUN",
+          quantity: qty, format: "LATA", drinkType: drinkInfo.drinkType,
+          drinkTypeOther: drinkInfo.drinkTypeOther,
           datePrecision: "MONTH_ONLY",
-          month: currentMonth ?? undefined,
-          year: defaultYear,
+          month: currentMonth ?? undefined, year: defaultYear,
           country: currentCountry,
           sharedWith: extractSharedWith(norm),
-          notes: rawLine,
-          rawLine,
-          dubious: true,
-          dubiousReason: "formato no detectado, asumido LATA",
+          notes: rawLine, rawLine,
+          dubious: true, dubiousReason: "formato no detectado, asumido LATA",
         });
-        continue;
+      } else {
+        skipped.push(rawLine);
       }
-      skipped.push(rawLine);
       continue;
     }
 
-    const drinkInfo = detectDrinkType(norm);
     const sharedWith = extractSharedWith(norm);
-
     let place: string | undefined;
-    if (formatResult.format === "MAQUINA") {
-      place = extractPlace(norm);
-    }
+    if (formatResult.format === "MAQUINA") place = extractPlace(norm);
 
     entries.push({
       quantity: qty,
