@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Consumo, SharedEntry, FormatType, DrinkType } from "@prisma/client";
@@ -21,52 +21,59 @@ const MONTHS = [
 export function HistorialClient({ initialConsumos }: { initialConsumos: ConsumoWithShared[] }) {
   const router = useRouter();
   const [consumos, setConsumos] = useState(initialConsumos);
+
+  // Siempre busca datos frescos al montar
+  useEffect(() => {
+    fetch("/api/consumos")
+      .then((r) => r.json())
+      .then((data) => setConsumos(data))
+      .catch(() => {}); // silencioso, usa initialConsumos si falla
+  }, []);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<ConsumoWithShared & { sharedNames: string[] }>>({});
 
   // Filters
   const [showFilters, setShowFilters] = useState(false);
-  const [filterMonth, setFilterMonth] = useState("");
+  const [filterMonth, setFilterMonth] = useState("ALL");
   const [filterYear, setFilterYear] = useState("");
-  const [filterCountry, setFilterCountry] = useState("");
-  const [filterFormat, setFilterFormat] = useState("");
-  const [filterDrinkType, setFilterDrinkType] = useState("");
+  const [filterCountry, setFilterCountry] = useState("ALL");
+  const [filterFormat, setFilterFormat] = useState("ALL");
+  const [filterDrinkType, setFilterDrinkType] = useState("ALL");
   const [filterShared, setFilterShared] = useState<"all" | "solo" | "shared">("all");
 
   const filtered = consumos.filter((c) => {
-    if (filterMonth && filterYear) {
-      const m = parseInt(filterMonth), y = parseInt(filterYear);
+    const activeMonth = filterMonth !== "ALL" ? parseInt(filterMonth) : null;
+    const activeYear = filterYear ? parseInt(filterYear) : null;
+    if (activeMonth && activeYear) {
       const ok =
-        (c.datePrecision === "MONTH_ONLY" && c.month === m && c.year === y) ||
+        (c.datePrecision === "MONTH_ONLY" && c.month === activeMonth && c.year === activeYear) ||
         (c.datePrecision === "EXACT" && c.consumedAt &&
-          new Date(c.consumedAt).getMonth() + 1 === m && new Date(c.consumedAt).getFullYear() === y);
+          new Date(c.consumedAt).getMonth() + 1 === activeMonth && new Date(c.consumedAt).getFullYear() === activeYear);
       if (!ok) return false;
-    } else if (filterMonth) {
-      const m = parseInt(filterMonth);
+    } else if (activeMonth) {
       const ok =
-        (c.datePrecision === "MONTH_ONLY" && c.month === m) ||
-        (c.datePrecision === "EXACT" && c.consumedAt && new Date(c.consumedAt).getMonth() + 1 === m);
+        (c.datePrecision === "MONTH_ONLY" && c.month === activeMonth) ||
+        (c.datePrecision === "EXACT" && c.consumedAt && new Date(c.consumedAt).getMonth() + 1 === activeMonth);
       if (!ok) return false;
-    } else if (filterYear) {
-      const y = parseInt(filterYear);
+    } else if (activeYear) {
       const ok =
-        (c.datePrecision === "MONTH_ONLY" && c.year === y) ||
-        (c.datePrecision === "EXACT" && c.consumedAt && new Date(c.consumedAt).getFullYear() === y);
+        (c.datePrecision === "MONTH_ONLY" && c.year === activeYear) ||
+        (c.datePrecision === "EXACT" && c.consumedAt && new Date(c.consumedAt).getFullYear() === activeYear);
       if (!ok) return false;
     }
-    if (filterCountry && c.country !== filterCountry) return false;
-    if (filterFormat && c.format !== filterFormat) return false;
-    if (filterDrinkType && c.drinkType !== filterDrinkType) return false;
+    if (filterCountry !== "ALL" && c.country !== filterCountry) return false;
+    if (filterFormat !== "ALL" && c.format !== filterFormat) return false;
+    if (filterDrinkType !== "ALL" && c.drinkType !== filterDrinkType) return false;
     if (filterShared === "solo" && c.sharedWith.length > 0) return false;
     if (filterShared === "shared" && c.sharedWith.length === 0) return false;
     return true;
   });
 
-  const hasFilters = !!(filterMonth || filterYear || filterCountry || filterFormat || filterDrinkType || filterShared !== "all");
+  const hasFilters = !!(filterMonth !== "ALL" || filterYear || filterCountry !== "ALL" || filterFormat !== "ALL" || filterDrinkType !== "ALL" || filterShared !== "all");
 
   function clearFilters() {
-    setFilterMonth(""); setFilterYear(""); setFilterCountry("");
-    setFilterFormat(""); setFilterDrinkType(""); setFilterShared("all");
+    setFilterMonth("ALL"); setFilterYear(""); setFilterCountry("ALL");
+    setFilterFormat("ALL"); setFilterDrinkType("ALL"); setFilterShared("all");
   }
 
   async function handleDelete(id: string) {
@@ -121,7 +128,7 @@ export function HistorialClient({ initialConsumos }: { initialConsumos: ConsumoW
             <Select value={filterMonth} onValueChange={setFilterMonth}>
               <SelectTrigger><SelectValue placeholder="Mes" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los meses</SelectItem>
+                <SelectItem value="ALL">Todos los meses</SelectItem>
                 {MONTHS.map((m, i) => <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -130,7 +137,7 @@ export function HistorialClient({ initialConsumos }: { initialConsumos: ConsumoW
           <Select value={filterCountry} onValueChange={setFilterCountry}>
             <SelectTrigger><SelectValue placeholder="País" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos los países</SelectItem>
+              <SelectItem value="ALL">Todos los países</SelectItem>
               {COUNTRIES.filter((c) => c !== "otro").map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -138,14 +145,14 @@ export function HistorialClient({ initialConsumos }: { initialConsumos: ConsumoW
             <Select value={filterFormat} onValueChange={setFilterFormat}>
               <SelectTrigger><SelectValue placeholder="Formato" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="ALL">Todos</SelectItem>
                 {Object.entries(FORMAT_LABELS).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={filterDrinkType} onValueChange={setFilterDrinkType}>
               <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="ALL">Todos</SelectItem>
                 {Object.entries(DRINK_LABELS).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
               </SelectContent>
             </Select>
