@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { prisma } from "@/lib/prisma";
 import { ML_DEFAULTS } from "@/lib/ml-defaults";
 import { ConfigClient } from "./ConfigClient";

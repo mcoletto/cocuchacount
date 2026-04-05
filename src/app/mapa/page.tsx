@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { prisma } from "@/lib/prisma";
 import { consumosPorPais } from "@/lib/stats";
 import { MapClient } from "./MapClient";
