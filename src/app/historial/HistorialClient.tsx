@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import type { Consumo, SharedEntry, FormatType, DrinkType } from "@prisma/client";
 import { FORMAT_LABELS, DRINK_LABELS, COUNTRIES } from "@/lib/ml-defaults";
@@ -9,7 +8,7 @@ import { formatConsumoDate, quantityDisplay, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Pencil, X, Check, Filter } from "lucide-react";
+import { Trash2, Pencil, X, Check, Filter, RefreshCw } from "lucide-react";
 
 type ConsumoWithShared = Consumo & { sharedWith: SharedEntry[] };
 
@@ -18,21 +17,12 @@ const MONTHS = [
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
 ];
 
-export function HistorialClient({ initialConsumos }: { initialConsumos: ConsumoWithShared[] }) {
-  const router = useRouter();
-  const [consumos, setConsumos] = useState(initialConsumos);
-
-  // Siempre busca datos frescos al montar
-  useEffect(() => {
-    fetch("/api/consumos", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((data) => setConsumos(data))
-      .catch(() => {});
-  }, []);
+export function HistorialClient() {
+  const [consumos, setConsumos] = useState<ConsumoWithShared[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<ConsumoWithShared & { sharedNames: string[] }>>({});
 
-  // Filters
   const [showFilters, setShowFilters] = useState(false);
   const [filterMonth, setFilterMonth] = useState("ALL");
   const [filterYear, setFilterYear] = useState("");
@@ -41,6 +31,26 @@ export function HistorialClient({ initialConsumos }: { initialConsumos: ConsumoW
   const [filterDrinkType, setFilterDrinkType] = useState("ALL");
   const [filterShared, setFilterShared] = useState<"all" | "solo" | "shared">("all");
 
+  const fetchConsumos = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/consumos", {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache" },
+      });
+      const data = await res.json();
+      setConsumos(data);
+    } catch (e) {
+      toast.error("Error al cargar los registros");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchConsumos();
+  }, [fetchConsumos]);
+
   const filtered = consumos.filter((c) => {
     const activeMonth = filterMonth !== "ALL" ? parseInt(filterMonth) : null;
     const activeYear = filterYear ? parseInt(filterYear) : null;
@@ -48,17 +58,20 @@ export function HistorialClient({ initialConsumos }: { initialConsumos: ConsumoW
       const ok =
         (c.datePrecision === "MONTH_ONLY" && c.month === activeMonth && c.year === activeYear) ||
         (c.datePrecision === "EXACT" && c.consumedAt &&
-          new Date(c.consumedAt).getMonth() + 1 === activeMonth && new Date(c.consumedAt).getFullYear() === activeYear);
+          new Date(c.consumedAt).getMonth() + 1 === activeMonth &&
+          new Date(c.consumedAt).getFullYear() === activeYear);
       if (!ok) return false;
     } else if (activeMonth) {
       const ok =
         (c.datePrecision === "MONTH_ONLY" && c.month === activeMonth) ||
-        (c.datePrecision === "EXACT" && c.consumedAt && new Date(c.consumedAt).getMonth() + 1 === activeMonth);
+        (c.datePrecision === "EXACT" && c.consumedAt &&
+          new Date(c.consumedAt).getMonth() + 1 === activeMonth);
       if (!ok) return false;
     } else if (activeYear) {
       const ok =
         (c.datePrecision === "MONTH_ONLY" && c.year === activeYear) ||
-        (c.datePrecision === "EXACT" && c.consumedAt && new Date(c.consumedAt).getFullYear() === activeYear);
+        (c.datePrecision === "EXACT" && c.consumedAt &&
+          new Date(c.consumedAt).getFullYear() === activeYear);
       if (!ok) return false;
     }
     if (filterCountry !== "ALL" && c.country !== filterCountry) return false;
@@ -69,7 +82,8 @@ export function HistorialClient({ initialConsumos }: { initialConsumos: ConsumoW
     return true;
   });
 
-  const hasFilters = !!(filterMonth !== "ALL" || filterYear || filterCountry !== "ALL" || filterFormat !== "ALL" || filterDrinkType !== "ALL" || filterShared !== "all");
+  const hasFilters = !!(filterMonth !== "ALL" || filterYear || filterCountry !== "ALL" ||
+    filterFormat !== "ALL" || filterDrinkType !== "ALL" || filterShared !== "all");
 
   function clearFilters() {
     setFilterMonth("ALL"); setFilterYear(""); setFilterCountry("ALL");
@@ -109,17 +123,25 @@ export function HistorialClient({ initialConsumos }: { initialConsumos: ConsumoW
     <div className="px-4 pt-8 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-black tracking-tight">Historial</h1>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className={cn(
-            "flex items-center gap-1.5 text-sm font-medium px-3 h-9 rounded-xl border transition-all",
-            hasFilters ? "bg-coca-red text-white border-coca-red" : "border-input text-foreground"
-          )}
-        >
-          <Filter size={14} />
-          Filtros
-          {hasFilters && <span className="bg-white/30 rounded-full w-4 h-4 text-xs flex items-center justify-center">!</span>}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={fetchConsumos}
+            className="w-9 h-9 flex items-center justify-center rounded-xl border border-input text-muted-foreground"
+          >
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+          </button>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={cn(
+              "flex items-center gap-1.5 text-sm font-medium px-3 h-9 rounded-xl border transition-all",
+              hasFilters ? "bg-coca-red text-white border-coca-red" : "border-input text-foreground"
+            )}
+          >
+            <Filter size={14} />
+            Filtros
+            {hasFilters && <span className="bg-white/30 rounded-full w-4 h-4 text-xs flex items-center justify-center">!</span>}
+          </button>
+        </div>
       </div>
 
       {showFilters && (
@@ -179,28 +201,35 @@ export function HistorialClient({ initialConsumos }: { initialConsumos: ConsumoW
         </div>
       )}
 
-      <p className="text-xs text-muted-foreground">{filtered.length} registros</p>
-
-      <div className="space-y-2 pb-4">
-        {filtered.map((c) => (
-          <ConsumoRow
-            key={c.id}
-            consumo={c}
-            isEditing={editingId === c.id}
-            editData={editData as ConsumoWithShared & { sharedNames: string[] }}
-            onEdit={() => startEdit(c)}
-            onSave={() => saveEdit(c.id)}
-            onCancel={() => { setEditingId(null); setEditData({}); }}
-            onDelete={() => handleDelete(c.id)}
-            onEditDataChange={setEditData}
-          />
-        ))}
-        {filtered.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground text-sm">
-            No hay registros para estos filtros
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <RefreshCw size={24} className="animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <>
+          <p className="text-xs text-muted-foreground">{filtered.length} registros</p>
+          <div className="space-y-2 pb-4">
+            {filtered.map((c) => (
+              <ConsumoRow
+                key={c.id}
+                consumo={c}
+                isEditing={editingId === c.id}
+                editData={editData as ConsumoWithShared & { sharedNames: string[] }}
+                onEdit={() => startEdit(c)}
+                onSave={() => saveEdit(c.id)}
+                onCancel={() => { setEditingId(null); setEditData({}); }}
+                onDelete={() => handleDelete(c.id)}
+                onEditDataChange={setEditData}
+              />
+            ))}
+            {filtered.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground text-sm">
+                No hay registros para estos filtros
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }
@@ -219,15 +248,6 @@ interface ConsumoRowProps {
 function ConsumoRow({ consumo: c, isEditing, editData, onEdit, onSave, onCancel, onDelete, onEditDataChange }: ConsumoRowProps) {
   const touchStartX = useRef(0);
   const [swiped, setSwiped] = useState(false);
-
-  function handleTouchStart(e: React.TouchEvent) {
-    touchStartX.current = e.touches[0].clientX;
-  }
-  function handleTouchEnd(e: React.TouchEvent) {
-    const diff = touchStartX.current - e.changedTouches[0].clientX;
-    if (diff > 60) setSwiped(true);
-    if (diff < -30) setSwiped(false);
-  }
 
   if (isEditing) {
     return (
@@ -287,19 +307,20 @@ function ConsumoRow({ consumo: c, isEditing, editData, onEdit, onSave, onCancel,
 
   return (
     <div className="relative overflow-hidden rounded-2xl">
-      {/* Delete bg (swipe reveal) */}
       <div className="absolute inset-y-0 right-0 w-20 bg-destructive flex items-center justify-center rounded-r-2xl">
         <Trash2 size={20} className="text-white" />
       </div>
-
-      {/* Card */}
       <div
         className={cn(
           "bg-white px-4 py-3 flex items-center gap-3 shadow-soft border border-border/60 rounded-2xl transition-transform relative z-10",
           swiped ? "-translate-x-20" : "translate-x-0"
         )}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
+        onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
+        onTouchEnd={(e) => {
+          const diff = touchStartX.current - e.changedTouches[0].clientX;
+          if (diff > 60) setSwiped(true);
+          if (diff < -30) setSwiped(false);
+        }}
       >
         <div className="w-10 h-10 rounded-xl bg-coca-red-pale flex items-center justify-center shrink-0">
           <span className="text-lg font-bold text-coca-red">{quantityDisplay(c.quantity)}</span>
@@ -319,27 +340,16 @@ function ConsumoRow({ consumo: c, isEditing, editData, onEdit, onSave, onCancel,
           </p>
         </div>
         <div className="flex gap-1 shrink-0">
-          <button
-            onClick={onEdit}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-          >
+          <button onClick={onEdit}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
             <Pencil size={14} />
           </button>
-          {swiped ? (
-            <button
-              onClick={() => { onDelete(); setSwiped(false); }}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-destructive bg-destructive/10"
-            >
-              <Trash2 size={14} />
-            </button>
-          ) : (
-            <button
-              onClick={onDelete}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-            >
-              <Trash2 size={14} />
-            </button>
-          )}
+          <button
+            onClick={() => { onDelete(); setSwiped(false); }}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+          >
+            <Trash2 size={14} />
+          </button>
         </div>
       </div>
     </div>
