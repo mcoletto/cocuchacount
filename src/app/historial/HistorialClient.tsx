@@ -102,21 +102,45 @@ export function HistorialClient() {
   }
 
   async function saveEdit(id: string) {
-    const { sharedNames, sharedWith, ...rest } = editData as ConsumoWithShared & { sharedNames: string[] };
-    const res = await fetch(`/api/consumos/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...rest,
-        consumedAt: rest.consumedAt ? new Date(rest.consumedAt).toISOString() : null,
-        sharedWith: sharedNames ?? [],
-      }),
-    });
-    const updated = await res.json();
-    setConsumos((prev) => prev.map((c) => (c.id === id ? updated : c)));
-    setEditingId(null);
-    setEditData({});
-    toast.success("Registro actualizado");
+    try {
+      const original = consumos.find((c) => c.id === id)!;
+      const d = editData as Partial<ConsumoWithShared & { sharedNames: string[] }>;
+
+      const res = await fetch(`/api/consumos/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          quantity:   d.quantity   ?? original.quantity,
+          format:     d.format     ?? original.format,
+          drinkType:  d.drinkType  ?? original.drinkType,
+          country:    d.country    ?? original.country,
+          place:      d.place      !== undefined ? d.place      : original.place,
+          notes:      d.notes      !== undefined ? d.notes      : original.notes,
+          mlOverride: d.mlOverride !== undefined ? d.mlOverride : original.mlOverride,
+          datePrecision: original.datePrecision,
+          consumedAt: original.consumedAt ? new Date(original.consumedAt).toISOString() : null,
+          month:      original.month,
+          year:       original.year,
+          sharedWith: d.sharedNames ?? original.sharedWith.map((s) => s.name),
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error("PATCH error:", err);
+        toast.error("Error al guardar");
+        return;
+      }
+
+      const updated = await res.json();
+      setConsumos((prev) => prev.map((c) => (c.id === id ? updated : c)));
+      setEditingId(null);
+      setEditData({});
+      toast.success("Registro actualizado");
+    } catch (e) {
+      console.error(e);
+      toast.error("Error al guardar");
+    }
   }
 
   return (
