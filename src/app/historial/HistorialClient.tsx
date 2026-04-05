@@ -24,10 +24,10 @@ export function HistorialClient({ initialConsumos }: { initialConsumos: ConsumoW
 
   // Siempre busca datos frescos al montar
   useEffect(() => {
-    fetch("/api/consumos")
+    fetch("/api/consumos", { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => setConsumos(data))
-      .catch(() => {}); // silencioso, usa initialConsumos si falla
+      .catch(() => {});
   }, []);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<ConsumoWithShared & { sharedNames: string[] }>>({});
