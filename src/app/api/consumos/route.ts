@@ -71,7 +71,11 @@ export async function GET(req: NextRequest) {
     orderBy: [{ consumedAt: "desc" }, { createdAt: "desc" }],
   });
 
-  return NextResponse.json(consumos);
+  return NextResponse.json(consumos, {
+    headers: {
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+    },
+  });
 }
 
 export async function POST(req: NextRequest) {

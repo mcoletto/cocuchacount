@@ -34,9 +34,9 @@ export function HistorialClient() {
   const fetchConsumos = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/consumos", {
+      const res = await fetch(`/api/consumos?_t=${Date.now()}`, {
         cache: "no-store",
-        headers: { "Cache-Control": "no-cache" },
+        headers: { "Cache-Control": "no-cache, no-store" },
       });
       const data = await res.json();
       setConsumos(data);
