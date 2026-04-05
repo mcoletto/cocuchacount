@@ -11,7 +11,8 @@
     "db:studio": "prisma studio",
     "db:generate": "prisma generate",
     "seed": "tsx scripts/seed.ts",
-    "import": "tsx scripts/import.ts"
+    "import": "tsx scripts/import.ts",
+    "reimport": "tsx scripts/reimport.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
