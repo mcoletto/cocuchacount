@@ -68,7 +68,10 @@ export async function GET(req: NextRequest) {
   const consumos = await prisma.consumo.findMany({
     where,
     include: { sharedWith: true },
-    orderBy: [{ consumedAt: "desc" }, { createdAt: "desc" }],
+    orderBy: [
+    { consumedAt: { sort: "desc", nulls: "last" } },
+    { createdAt: "desc" },
+  ],
   });
 
   return NextResponse.json(consumos, {
