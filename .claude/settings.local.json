@@ -9,7 +9,8 @@
       "Bash(command -v pnpm)",
       "Bash(command -v yarn)",
       "Bash(arch -arm64 /usr/local/bin/node --version)",
-      "Bash(/usr/local/bin/node --version)"
+      "Bash(/usr/local/bin/node --version)",
+      "Bash(git push:*)"
     ]
   }
 }

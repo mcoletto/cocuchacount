@@ -23,11 +23,12 @@ function exactDateConsumos(consumos: ConsumoWithShared[]) {
 }
 
 export function consumosHoy(consumos: ConsumoWithShared[]): ConsumoWithShared[] {
-  const today = new Date();
-  const todayStr = today.toISOString().split("T")[0];
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   return exactDateConsumos(consumos).filter((c) => {
-    const d = c.consumedAt!;
-    return new Date(d).toISOString().split("T")[0] === todayStr;
+    const d = new Date(c.consumedAt!);
+    const dStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    return dStr === todayStr;
   });
 }
 

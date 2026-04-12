@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import type { Consumo, SharedEntry, FormatType, DrinkType } from "@prisma/client";
-import { FORMAT_LABELS, DRINK_LABELS, COUNTRIES } from "@/lib/ml-defaults";
+import { FORMAT_LABELS, DRINK_LABELS, COUNTRIES, SHARED_PRESETS } from "@/lib/ml-defaults";
 import { formatConsumoDate, quantityDisplay, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -307,19 +307,37 @@ function ConsumoRow({ consumo: c, isEditing, editData, onEdit, onSave, onCancel,
         </div>
         <div>
           <label className="text-xs text-muted-foreground">País</label>
-          <Input value={editData.country ?? c.country}
-            onChange={(e) => onEditDataChange({ ...editData, country: e.target.value })} />
+          <Select value={editData.country ?? c.country}
+            onValueChange={(v) => onEditDataChange({ ...editData, country: v })}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {COUNTRIES.filter((co) => co !== "otro").map((co) => (
+                <SelectItem key={co} value={co}>{co}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div>
-          <label className="text-xs text-muted-foreground">Compartido con (separado por comas)</label>
-          <Input
-            value={(editData.sharedNames ?? c.sharedWith.map((s) => s.name)).join(", ")}
-            onChange={(e) => onEditDataChange({
-              ...editData,
-              sharedNames: e.target.value.split(",").map((n) => n.trim()).filter(Boolean),
-            })}
-            placeholder="fede, vicu..."
-          />
+          <label className="text-xs text-muted-foreground mb-1 block">Compartido con</label>
+          <div className="flex flex-wrap gap-2">
+            {(() => {
+              const names = editData.sharedNames ?? c.sharedWith.map((s) => s.name);
+              const toggleName = (name: string) => {
+                const next = names.includes(name) ? names.filter((n) => n !== name) : [...names, name];
+                onEditDataChange({ ...editData, sharedNames: next });
+              };
+              return SHARED_PRESETS.map((name) => (
+                <button key={name} type="button"
+                  onClick={() => toggleName(name)}
+                  className={cn(
+                    "px-3 h-8 rounded-xl border text-sm font-medium transition-all",
+                    names.includes(name) ? "bg-coca-red text-white border-coca-red" : "border-input"
+                  )}>
+                  {name}
+                </button>
+              ));
+            })()}
+          </div>
         </div>
         <div className="flex gap-2">
           <Button size="sm" onClick={onSave} className="flex-1"><Check size={14} /> Guardar</Button>

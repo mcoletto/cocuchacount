@@ -41,9 +41,10 @@ export function AddConsumoSheet({ defaultFormat = "LATA", children }: AddConsumo
   const [shared, setShared] = useState<string[]>([]);
   const [customPerson, setCustomPerson] = useState("");
   const [dateMode, setDateMode] = useState<"today" | "month">("today");
-  const [selectedDate, setSelectedDate] = useState(
-    () => new Date().toISOString().split("T")[0]
-  );
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  });
   const [selectedMonth, setSelectedMonth] = useState(
     () => `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`
   );
@@ -106,7 +107,7 @@ export function AddConsumoSheet({ defaultFormat = "LATA", children }: AddConsumo
     <button className="w-full">
       <div className="bg-coca-red text-white rounded-3xl py-5 px-6 flex items-center justify-center gap-3 shadow-card active:scale-95 transition-transform">
         <Plus size={28} strokeWidth={2.5} />
-        <span className="text-xl font-bold tracking-tight">+1 coca</span>
+        <span className="text-xl font-bold tracking-tight">Agregar</span>
       </div>
     </button>
   );

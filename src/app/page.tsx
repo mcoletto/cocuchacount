@@ -6,6 +6,7 @@ import { AddConsumoSheet } from "@/components/home/AddConsumoSheet";
 import { QuickFormats } from "@/components/home/QuickFormats";
 import { RecentConsumos } from "@/components/home/RecentConsumos";
 import { WeeklySummary } from "@/components/home/WeeklySummary";
+import Image from "next/image";
 import {
   consumosHoy, consumosSemana, consumosMes,
   calcTotalQuantity, calcTotalMl, consumosPorPais, rachaActual,
@@ -44,15 +45,13 @@ export default async function HomePage() {
 
   return (
     <div className="px-4 pt-8 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-foreground">🥤 CocuchaCount</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {new Date().toLocaleDateString("es-AR", {
-              weekday: "long", day: "numeric", month: "long",
-            })}
-          </p>
-        </div>
+      <div className="flex flex-col items-center gap-2 pt-2 pb-2">
+        <Image src="/logo.png" alt="CocuchaCount" width={200} height={60} priority className="h-16 w-auto" />
+        <p className="text-xs text-muted-foreground capitalize">
+          {new Date().toLocaleDateString("es-AR", {
+            weekday: "long", day: "numeric", month: "long",
+          })}
+        </p>
       </div>
 
       <TodayCounter total={totalHoy} mlTotal={mlHoy} streak={streak} />
