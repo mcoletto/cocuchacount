@@ -33,9 +33,9 @@ export function RecentConsumos({ consumos }: RecentConsumoProps) {
         {consumos.map((c) => (
           <div
             key={c.id}
-            className="bg-white rounded-2xl px-4 py-3 flex items-center gap-3 shadow-soft border border-border/60"
+            className="bg-card rounded-2xl px-4 py-3 flex items-center gap-3 shadow-soft border border-border/60"
           >
-            <div className="w-10 h-10 rounded-xl bg-coca-red-pale flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-coca-red-pale dark:bg-red-950/40 flex items-center justify-center shrink-0">
               <span className="text-lg font-bold text-coca-red">
                 {quantityDisplay(c.quantity)}
               </span>

@@ -185,6 +185,36 @@ export function consumosPorMes(consumos: ConsumoWithShared[]): Array<{ label: st
     .sort((a, b) => a.key.localeCompare(b.key));
 }
 
+export function tendenciaMensual(consumos: ConsumoWithShared[]): { proyectado: number; promedio: number } | null {
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+  const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+  const dayOfMonth = now.getDate();
+
+  const byMonth = new Map<string, number>();
+  for (const c of consumos) {
+    let key: string | null = null;
+    if (c.datePrecision === "MONTH_ONLY" && c.month && c.year) {
+      key = `${c.year}-${c.month}`;
+    } else if (c.datePrecision === "EXACT" && c.consumedAt) {
+      const d = new Date(c.consumedAt);
+      key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+    }
+    if (key) byMonth.set(key, (byMonth.get(key) ?? 0) + c.quantity);
+  }
+
+  const currentKey = `${currentYear}-${currentMonth}`;
+  const currentTotal = byMonth.get(currentKey) ?? 0;
+  const pastMonths = [...byMonth.entries()].filter(([k]) => k !== currentKey);
+  if (pastMonths.length === 0) return null;
+
+  const promedio = pastMonths.reduce((s, [, v]) => s + v, 0) / pastMonths.length;
+  const proyectado = Math.round((currentTotal / dayOfMonth) * daysInMonth);
+
+  return { proyectado, promedio: Math.round(promedio) };
+}
+
 export function consumosPorTipo(consumos: ConsumoWithShared[]) {
   const map = new Map<string, number>();
   for (const c of consumos) {

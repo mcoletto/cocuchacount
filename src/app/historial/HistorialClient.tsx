@@ -31,6 +31,25 @@ export function HistorialClient() {
   const [filterDrinkType, setFilterDrinkType] = useState("ALL");
   const [filterShared, setFilterShared] = useState<"all" | "solo" | "shared">("all");
 
+  function sortByEffectiveDate(list: ConsumoWithShared[]): ConsumoWithShared[] {
+    return [...list].sort((a, b) => {
+      const getYM = (c: ConsumoWithShared) => {
+        if (c.datePrecision === "EXACT" && c.consumedAt) {
+          const d = new Date(c.consumedAt);
+          return { year: d.getFullYear(), month: d.getMonth() + 1, ts: d.getTime() };
+        }
+        return { year: c.year ?? 0, month: c.month ?? 0, ts: 0 };
+      };
+      const ea = getYM(a), eb = getYM(b);
+      if (ea.year !== eb.year) return eb.year - ea.year;
+      if (ea.month !== eb.month) return eb.month - ea.month;
+      if (ea.ts && eb.ts) return eb.ts - ea.ts;
+      if (ea.ts) return -1;
+      if (eb.ts) return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }
+
   const fetchConsumos = useCallback(async () => {
     setLoading(true);
     try {
@@ -39,7 +58,7 @@ export function HistorialClient() {
         headers: { "Cache-Control": "no-cache, no-store" },
       });
       const data = await res.json();
-      setConsumos(data);
+      setConsumos(sortByEffectiveDate(data));
     } catch (e) {
       toast.error("Error al cargar los registros");
     } finally {
@@ -169,7 +188,7 @@ export function HistorialClient() {
       </div>
 
       {showFilters && (
-        <div className="bg-white rounded-2xl p-4 shadow-soft border border-border/60 space-y-3">
+        <div className="bg-card rounded-2xl p-4 shadow-soft border border-border/60 space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <Select value={filterMonth} onValueChange={setFilterMonth}>
               <SelectTrigger><SelectValue placeholder="Mes" /></SelectTrigger>
@@ -275,7 +294,7 @@ function ConsumoRow({ consumo: c, isEditing, editData, onEdit, onSave, onCancel,
 
   if (isEditing) {
     return (
-      <div className="bg-white rounded-2xl p-4 shadow-soft border border-coca-red/30 space-y-3">
+      <div className="bg-card rounded-2xl p-4 shadow-soft border border-coca-red/30 space-y-3">
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="text-xs text-muted-foreground">Cantidad</label>
@@ -354,7 +373,7 @@ function ConsumoRow({ consumo: c, isEditing, editData, onEdit, onSave, onCancel,
       </div>
       <div
         className={cn(
-          "bg-white px-4 py-3 flex items-center gap-3 shadow-soft border border-border/60 rounded-2xl transition-transform relative z-10",
+          "bg-card px-4 py-3 flex items-center gap-3 shadow-soft border border-border/60 rounded-2xl transition-transform relative z-10",
           swiped ? "-translate-x-20" : "translate-x-0"
         )}
         onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
@@ -364,7 +383,7 @@ function ConsumoRow({ consumo: c, isEditing, editData, onEdit, onSave, onCancel,
           if (diff < -30) setSwiped(false);
         }}
       >
-        <div className="w-10 h-10 rounded-xl bg-coca-red-pale flex items-center justify-center shrink-0">
+        <div className="w-10 h-10 rounded-xl bg-coca-red-pale dark:bg-red-950/40 flex items-center justify-center shrink-0">
           <span className="text-lg font-bold text-coca-red">{quantityDisplay(c.quantity)}</span>
         </div>
         <div className="flex-1 min-w-0">

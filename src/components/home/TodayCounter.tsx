@@ -11,7 +11,7 @@ export function TodayCounter({ total, mlTotal, streak }: TodayCounterProps) {
   return (
     <div className="text-center py-4">
       <div className="inline-flex flex-col items-center gap-1">
-        <div className="text-7xl font-black text-coca-red leading-none tracking-tighter">
+        <div className="text-7xl font-black text-coca-red leading-none tracking-tighter animate-pop">
           {quantityDisplay(total)}
         </div>
         <div className="text-sm font-medium text-muted-foreground">
@@ -25,7 +25,7 @@ export function TodayCounter({ total, mlTotal, streak }: TodayCounterProps) {
       </div>
 
       {streak > 0 && (
-        <div className="mt-4 inline-flex items-center gap-1.5 bg-orange-50 text-orange-500 rounded-full px-4 py-1.5 text-sm font-semibold">
+        <div className="mt-4 inline-flex items-center gap-1.5 bg-orange-50 dark:bg-orange-950/30 text-orange-500 dark:text-orange-400 rounded-full px-4 py-1.5 text-sm font-semibold">
           <Flame size={14} className="fill-orange-400 text-orange-400" />
           {streak} {streak === 1 ? "día seguido" : "días seguidos"}
         </div>

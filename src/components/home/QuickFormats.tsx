@@ -19,7 +19,7 @@ export function QuickFormats() {
       <div className="grid grid-cols-3 gap-2">
         {QUICK_FORMATS.map(({ format, emoji, label }) => (
           <AddConsumoSheet key={format} defaultFormat={format}>
-            <button className="bg-white rounded-2xl p-3 flex flex-col items-center gap-1.5 shadow-soft border border-border/60 active:scale-95 transition-transform">
+            <button className="bg-card rounded-2xl p-3 flex flex-col items-center gap-1.5 shadow-soft border border-border/60 active:scale-95 transition-transform">
               <span className="text-2xl">{emoji}</span>
               <span className="text-xs font-medium text-foreground">{label}</span>
             </button>

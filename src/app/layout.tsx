@@ -14,6 +14,9 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "CocuchaCount",
   },
+  icons: {
+    apple: "/apple-icon.png",
+  },
 };
 
 export const viewport: Viewport = {

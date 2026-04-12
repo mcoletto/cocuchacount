@@ -10,7 +10,8 @@
       "Bash(command -v yarn)",
       "Bash(arch -arm64 /usr/local/bin/node --version)",
       "Bash(/usr/local/bin/node --version)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(ls /Users/martucoletto/Desktop/cocuchacount/src/app/icon* /Users/martucoletto/Desktop/cocuchacount/public/)"
     ]
   }
 }
