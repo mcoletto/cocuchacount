@@ -111,7 +111,7 @@ export function StatsClient({ stats }: { stats: Stats }) {
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={porMes} margin={{ top: 4, right: 0, left: -20, bottom: 0 }}>
                 <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#888" }}
-                  tickFormatter={(v) => v.split(" ")[0]} />
+                  tickFormatter={(v) => { const [m, y] = v.split(" "); return y ? `${m} '${y.slice(2)}` : m; }} />
                 <YAxis tick={{ fontSize: 10, fill: "#888" }} />
                 <Tooltip
                   formatter={(v) => [`${v} cocas`, ""]}
