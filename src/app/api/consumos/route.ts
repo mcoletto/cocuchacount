@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -97,6 +98,10 @@ export async function POST(req: NextRequest) {
     },
     include: { sharedWith: true },
   });
+
+  revalidatePath("/");
+  revalidatePath("/historial");
+  revalidatePath("/estadisticas");
 
   return NextResponse.json(consumo, { status: 201 });
 }

@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -53,11 +54,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     include: { sharedWith: true },
   });
 
+  revalidatePath("/");
+  revalidatePath("/historial");
+  revalidatePath("/estadisticas");
   return NextResponse.json(consumo);
 }
 
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   await prisma.consumo.delete({ where: { id } });
+  revalidatePath("/");
+  revalidatePath("/historial");
+  revalidatePath("/estadisticas");
   return NextResponse.json({ ok: true });
 }
