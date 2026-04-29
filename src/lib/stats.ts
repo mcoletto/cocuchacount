@@ -59,8 +59,9 @@ export function consumosMes(consumos: ConsumoWithShared[], month?: number, year?
       return c.month === m && c.year === y;
     }
     if (c.datePrecision === "EXACT" && c.consumedAt) {
-      const d = new Date(c.consumedAt);
-      return d.getMonth() + 1 === m && d.getFullYear() === y;
+      const argDate = toArgDate(new Date(c.consumedAt));
+      const [y2, m2] = argDate.split("-").map(Number);
+      return m2 === m && y2 === y;
     }
     return false;
   });
@@ -202,8 +203,8 @@ export function tendenciaMensual(consumos: ConsumoWithShared[]): { proyectado: n
     if (c.datePrecision === "MONTH_ONLY" && c.month && c.year) {
       key = `${c.year}-${c.month}`;
     } else if (c.datePrecision === "EXACT" && c.consumedAt) {
-      const d = new Date(c.consumedAt);
-      key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+      const [y2, m2] = toArgDate(new Date(c.consumedAt)).split("-").map(Number);
+      key = `${y2}-${m2}`;
     }
     if (key) byMonth.set(key, (byMonth.get(key) ?? 0) + c.quantity);
   }
