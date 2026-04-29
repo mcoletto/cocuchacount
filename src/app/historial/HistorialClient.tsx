@@ -8,7 +8,7 @@ import { formatConsumoDate, quantityDisplay, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Pencil, X, Check, Filter, RefreshCw } from "lucide-react";
+import { Trash2, Pencil, X, Check, Filter, RefreshCw, Download } from "lucide-react";
 
 type ConsumoWithShared = Consumo & { sharedWith: SharedEntry[] };
 
@@ -109,6 +109,37 @@ export function HistorialClient() {
     setFilterFormat("ALL"); setFilterDrinkType("ALL"); setFilterShared("all");
   }
 
+  function exportCSV() {
+    const headers = ["fecha", "precision", "mes", "año", "cantidad", "formato", "tipo", "pais", "lugar", "compartido_con", "ml_override", "notas"];
+    const rows = filtered.map((c) => {
+      const fecha = c.datePrecision === "EXACT" && c.consumedAt
+        ? new Date(c.consumedAt).toLocaleDateString("es-AR")
+        : "";
+      return [
+        fecha,
+        c.datePrecision,
+        c.month ?? "",
+        c.year ?? "",
+        c.quantity,
+        FORMAT_LABELS[c.format] ?? c.format,
+        DRINK_LABELS[c.drinkType] ?? c.drinkType,
+        c.country,
+        c.place ?? "",
+        c.sharedWith.map((s) => s.name).join("; "),
+        c.mlOverride ?? "",
+        c.notes ?? "",
+      ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",");
+    });
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `cocuchacount-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function handleDelete(id: string) {
     await fetch(`/api/consumos/${id}`, { method: "DELETE" });
     setConsumos((prev) => prev.filter((c) => c.id !== id));
@@ -167,6 +198,13 @@ export function HistorialClient() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-black tracking-tight">Historial</h1>
         <div className="flex gap-2">
+          <button
+            onClick={exportCSV}
+            title="Exportar CSV"
+            className="w-9 h-9 flex items-center justify-center rounded-xl border border-input text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Download size={14} />
+          </button>
           <button
             onClick={fetchConsumos}
             className="w-9 h-9 flex items-center justify-center rounded-xl border border-input text-muted-foreground"
